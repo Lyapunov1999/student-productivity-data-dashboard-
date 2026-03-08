@@ -266,7 +266,7 @@ def build_ternary_productivity(df: pd.DataFrame) -> go.Figure:
             y=y_centers,
             z=mean_productivity,
             colorscale="Viridis_r",
-            colorbar=dict(title="Avg Productivity"),
+            colorbar=dict(title="Productivity"),
             customdata=productivity_hover,
             hovertemplate=(
                 "Mean Productivity: %{customdata[0]:.2f}<br>"
@@ -294,9 +294,9 @@ def build_ternary_density(df: pd.DataFrame) -> go.Figure:
             y=y_centers,
             z=density_counts_log,
             colorscale="Blues",
-            colorbar=dict(title="Density (log count/bin)"),
+            colorbar=dict(title="Density", showticklabels=False),
             customdata=density_counts,
-            hovertemplate="Density (count): %{customdata:.0f}<extra></extra>",
+            hovertemplate="Samples in bin: %{customdata:.0f}<extra></extra>",
             showscale=True,
             zsmooth=False,
             hoverongaps=False,
@@ -339,7 +339,7 @@ def build_density_panel(df: pd.DataFrame, x_col: str, x_label: str) -> go.Figure
             z=density_counts,
             customdata=counts.T,
             colorscale="Blues",
-            colorbar=dict(title="Density"),
+            colorbar=dict(title="Density", showticklabels=False),
             hovertemplate=(
                 f"{x_label}: %{{x:.2f}}<br>"
                 "Productivity: %{y:.2f}<br>"
@@ -506,7 +506,7 @@ app.layout = html.Div(
                         ),
                         html.Div(
                             [
-                                html.Label("Main Activity Time Range"),
+                                html.Label("(Study+Sleep+Phone) Time Range"),
                                 dcc.RangeSlider(
                                     id="main-activity-filter",
                                     min=DEFAULT_MAIN_ACTIVITY_RANGE[0],
