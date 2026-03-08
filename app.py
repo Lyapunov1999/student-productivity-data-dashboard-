@@ -4,7 +4,6 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-import plotly.figure_factory as ff
 import plotly.graph_objects as go
 from dash import Dash, Input, Output, State, ctx, dcc, html, no_update
 from scipy.stats import gaussian_kde
@@ -120,111 +119,187 @@ def empty_figure(title: str) -> go.Figure:
     return fig
 
 
-def build_ternary_productivity(df: pd.DataFrame) -> go.Figure:
-    title = "Ternary Composition (Color = Productivity Score)"
-    if df.empty:
-        return empty_figure(title)
+TERNARY_HEIGHT = float(np.sqrt(3) / 2)
+TERNARY_GRID_BINS = 120
 
-    fig = go.Figure(
-        data=[
-            go.Scatterternary(
-                mode="markers",
-                a=df["sleep_ratio"],
-                b=df["study_ratio"],
-                c=df["phone_ratio"],
-                marker=dict(
-                    size=6,
-                    opacity=0.8,
-                    color=df["productivity_score"],
-                    colorscale="Viridis",
-                    colorbar=dict(title="Productivity"),
-                ),
-                hovertemplate=(
-                    "Sleep ratio: %{a:.2f}<br>"
-                    "Study ratio: %{b:.2f}<br>"
-                    "Phone ratio: %{c:.2f}<br>"
-                    "Productivity: %{marker.color:.2f}<extra></extra>"
-                ),
-                showlegend=False,
-            )
-        ]
+
+def ternary_to_cartesian(a: np.ndarray, b: np.ndarray, c: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    # Vertex mapping: Sleep(a)=top, Study(b)=left, Phone(c)=right.
+    x = c + 0.5 * a
+    y = a * TERNARY_HEIGHT
+    return x, y
+
+
+def build_ternary_binned_matrices(
+    df: pd.DataFrame, bins: int = TERNARY_GRID_BINS
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    a = df["sleep_ratio"].to_numpy(dtype=float)
+    b = df["study_ratio"].to_numpy(dtype=float)
+    c = df["phone_ratio"].to_numpy(dtype=float)
+    values = df["productivity_score"].to_numpy(dtype=float)
+
+    x, y = ternary_to_cartesian(a, b, c)
+    x_edges = np.linspace(0.0, 1.0, bins + 1)
+    y_edges = np.linspace(0.0, TERNARY_HEIGHT, bins + 1)
+
+    x_idx = np.clip(np.searchsorted(x_edges, x, side="right") - 1, 0, bins - 1)
+    y_idx = np.clip(np.searchsorted(y_edges, y, side="right") - 1, 0, bins - 1)
+    valid = np.isfinite(values)
+    x_idx = x_idx[valid]
+    y_idx = y_idx[valid]
+    values = values[valid]
+
+    flat_idx = y_idx * bins + x_idx
+    counts = np.bincount(flat_idx, minlength=bins * bins).reshape(bins, bins)
+    sums = np.bincount(flat_idx, weights=values, minlength=bins * bins).reshape(bins, bins)
+
+    mean_productivity = np.full((bins, bins), np.nan, dtype=float)
+    np.divide(sums, counts, out=mean_productivity, where=counts > 0)
+
+    x_centers = (x_edges[:-1] + x_edges[1:]) / 2
+    y_centers = (y_edges[:-1] + y_edges[1:]) / 2
+    xx, yy = np.meshgrid(x_centers, y_centers)
+    a_center = yy / TERNARY_HEIGHT
+    c_center = xx - 0.5 * a_center
+    b_center = 1.0 - a_center - c_center
+    inside_triangle = (a_center >= -1e-9) & (b_center >= -1e-9) & (c_center >= -1e-9)
+    occupied = counts > 0
+    valid_cells = inside_triangle & occupied
+
+    mean_productivity[~valid_cells] = np.nan
+    density_counts = counts.astype(float)
+    density_counts[~valid_cells] = np.nan
+
+    return x_centers, y_centers, mean_productivity, density_counts
+
+
+def format_ternary_heatmap_layout(fig: go.Figure, title: str) -> go.Figure:
+    fig.add_trace(
+        go.Scatter(
+            x=[0.0, 1.0, 0.5, 0.0],
+            y=[0.0, 0.0, TERNARY_HEIGHT, 0.0],
+            mode="lines",
+            line=dict(color="#4f4f4f", width=1.5),
+            hoverinfo="skip",
+            showlegend=False,
+        )
     )
     fig.update_layout(
         title=title,
         template="plotly_white",
-        margin=dict(l=40, r=20, t=55, b=40),
-        ternary=dict(
-            sum=1,
-            aaxis=dict(title="Sleep Ratio", showgrid=False),
-            baxis=dict(title="Study Ratio", showgrid=False),
-            caxis=dict(title="Phone Ratio", showgrid=False),
-        ),
+        margin=dict(l=40, r=20, t=55, b=45),
+        annotations=[
+            dict(
+                text="Sleep Ratio",
+                x=0.5,
+                y=TERNARY_HEIGHT + 0.06,
+                xref="x",
+                yref="y",
+                showarrow=False,
+                font=dict(size=12),
+            ),
+            dict(
+                text="Study Ratio",
+                x=-0.02,
+                y=-0.04,
+                xref="x",
+                yref="y",
+                xanchor="left",
+                showarrow=False,
+                font=dict(size=12),
+            ),
+            dict(
+                text="Phone Ratio",
+                x=1.02,
+                y=-0.04,
+                xref="x",
+                yref="y",
+                xanchor="right",
+                showarrow=False,
+                font=dict(size=12),
+            ),
+        ],
+    )
+    fig.update_xaxes(
+        showgrid=False,
+        zeroline=False,
+        showticklabels=False,
+        range=[-0.03, 1.03],
+        fixedrange=True,
+    )
+    fig.update_yaxes(
+        showgrid=False,
+        zeroline=False,
+        showticklabels=False,
+        range=[-0.06, TERNARY_HEIGHT + 0.08],
+        scaleanchor="x",
+        scaleratio=1,
+        fixedrange=True,
     )
     return fig
+
+
+def log1p_for_heatmap(values: np.ndarray) -> np.ndarray:
+    logged = np.full(values.shape, np.nan, dtype=float)
+    valid = np.isfinite(values)
+    if not np.any(valid):
+        return logged
+
+    logged[valid] = np.log1p(np.maximum(values[valid], 0.0))
+    return logged
+
+
+def build_ternary_productivity(df: pd.DataFrame) -> go.Figure:
+    title = "Ternary Composition (Binned Mean Productivity)"
+    if df.empty:
+        return empty_figure(title)
+
+    x_centers, y_centers, mean_productivity, density_counts = build_ternary_binned_matrices(df)
+    productivity_hover = np.stack([mean_productivity, density_counts], axis=-1)
+    fig = go.Figure()
+    fig.add_trace(
+        go.Heatmap(
+            x=x_centers,
+            y=y_centers,
+            z=mean_productivity,
+            colorscale="Viridis_r",
+            colorbar=dict(title="Avg Productivity"),
+            customdata=productivity_hover,
+            hovertemplate=(
+                "Mean Productivity: %{customdata[0]:.2f}<br>"
+                "Samples in bin: %{customdata[1]:.0f}<extra></extra>"
+            ),
+            showscale=True,
+            zsmooth=False,
+            hoverongaps=False,
+        )
+    )
+    return format_ternary_heatmap_layout(fig, title)
 
 
 def build_ternary_density(df: pd.DataFrame) -> go.Figure:
-    title = "Ternary Density Contour"
+    title = "Ternary Density (Binned Heatmap)"
     if df.empty:
         return empty_figure(title)
 
-    if len(df) < 10:
-        # Fallback for very small samples where contour density is unstable.
-        fig = go.Figure(
-            data=[
-                go.Scatterternary(
-                    mode="markers",
-                    a=df["sleep_ratio"],
-                    b=df["study_ratio"],
-                    c=df["phone_ratio"],
-                    marker=dict(size=6, color="#1f77b4", opacity=0.8),
-                    showlegend=False,
-                )
-            ]
+    x_centers, y_centers, _mean_productivity, density_counts = build_ternary_binned_matrices(df)
+    density_counts_log = log1p_for_heatmap(density_counts)
+    fig = go.Figure()
+    fig.add_trace(
+        go.Heatmap(
+            x=x_centers,
+            y=y_centers,
+            z=density_counts_log,
+            colorscale="Blues",
+            colorbar=dict(title="Density (log count/bin)"),
+            customdata=density_counts,
+            hovertemplate="Density (count): %{customdata:.0f}<extra></extra>",
+            showscale=True,
+            zsmooth=False,
+            hoverongaps=False,
         )
-    else:
-        coordinates = np.vstack(
-            [df["sleep_ratio"].to_numpy(), df["study_ratio"].to_numpy(), df["phone_ratio"].to_numpy()]
-        )
-        try:
-            fig = ff.create_ternary_contour(
-                coordinates=coordinates,
-                pole_labels=["Sleep Ratio", "Study Ratio", "Phone Ratio"],
-                ncontours=20,
-                colorscale="Blues",
-                interp_mode="cartesian",
-                showscale=True,
-            )
-        except Exception:
-            fig = go.Figure(
-                data=[
-                    go.Scatterternary(
-                        mode="markers",
-                        a=df["sleep_ratio"],
-                        b=df["study_ratio"],
-                        c=df["phone_ratio"],
-                        marker=dict(size=6, color="#1f77b4", opacity=0.8),
-                        showlegend=False,
-                    )
-                ]
-            )
-
-    for trace in fig.data:
-        if hasattr(trace, "colorbar") and trace.colorbar:
-            trace.colorbar.title = "Density"
-
-    fig.update_layout(
-        title=title,
-        template="plotly_white",
-        margin=dict(l=40, r=20, t=55, b=40),
-        ternary=dict(
-            sum=1,
-            aaxis=dict(title="Sleep Ratio", showgrid=False),
-            baxis=dict(title="Study Ratio", showgrid=False),
-            caxis=dict(title="Phone Ratio", showgrid=False),
-        ),
     )
-    return fig
+    return format_ternary_heatmap_layout(fig, title)
 
 
 def build_density_panel(df: pd.DataFrame, x_col: str, x_label: str) -> go.Figure:
