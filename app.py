@@ -135,9 +135,9 @@ def build_ternary_productivity(df: pd.DataFrame) -> go.Figure:
         margin=dict(l=40, r=20, t=55, b=40),
         ternary=dict(
             sum=1,
-            aaxis=dict(title="Sleep Ratio"),
-            baxis=dict(title="Study Ratio"),
-            caxis=dict(title="Phone Ratio"),
+            aaxis=dict(title="Sleep Ratio", showgrid=False),
+            baxis=dict(title="Study Ratio", showgrid=False),
+            caxis=dict(title="Phone Ratio", showgrid=False),
         ),
     )
     return fig
@@ -199,9 +199,9 @@ def build_ternary_density(df: pd.DataFrame) -> go.Figure:
         margin=dict(l=40, r=20, t=55, b=40),
         ternary=dict(
             sum=1,
-            aaxis=dict(title="Sleep Ratio"),
-            baxis=dict(title="Study Ratio"),
-            caxis=dict(title="Phone Ratio"),
+            aaxis=dict(title="Sleep Ratio", showgrid=False),
+            baxis=dict(title="Study Ratio", showgrid=False),
+            caxis=dict(title="Phone Ratio", showgrid=False),
         ),
     )
     return fig
@@ -317,7 +317,10 @@ def build_stress_distribution(df: pd.DataFrame) -> go.Figure:
 DATA_DF = load_data(DATA_PATH)
 TOTAL_RECORDS = len(DATA_DF)
 
-DEFAULT_GENDERS = sorted(DATA_DF["gender"].dropna().unique().tolist())
+GENDER_FILTER_OPTIONS = ["Male", "Female"]
+DEFAULT_GENDERS = [g for g in GENDER_FILTER_OPTIONS if g in set(DATA_DF["gender"].dropna().unique())]
+if not DEFAULT_GENDERS:
+    DEFAULT_GENDERS = GENDER_FILTER_OPTIONS.copy()
 DEFAULT_AGE_RANGE = [int(DATA_DF["age"].min()), int(DATA_DF["age"].max())]
 DEFAULT_MAIN_ACTIVITY_RANGE = make_range(DATA_DF["main_activity_time"], round_digits=2)
 DEFAULT_PRODUCTIVITY_RANGE = make_range(DATA_DF["productivity_score"], round_digits=0)
@@ -342,13 +345,13 @@ app.layout = html.Div(
                 html.Div(
                     [
                         html.Label("Gender"),
-                        dcc.Dropdown(
+                        dcc.Checklist(
                             id="gender-filter",
-                            options=[{"label": value, "value": value} for value in DEFAULT_GENDERS],
+                            options=[{"label": value, "value": value} for value in GENDER_FILTER_OPTIONS],
                             value=DEFAULT_GENDERS,
-                            multi=True,
-                            clearable=True,
-                            placeholder="Select gender(s)",
+                            inline=True,
+                            inputStyle={"marginRight": "6px"},
+                            labelStyle={"marginRight": "18px"},
                         ),
                     ],
                     style=control_style,
@@ -371,7 +374,7 @@ app.layout = html.Div(
                 ),
                 html.Div(
                     [
-                        html.Label("Main Activity Time Range (Study + Sleep + Phone)"),
+                        html.Label("Main Activity Time Range"),
                         dcc.RangeSlider(
                             id="main-activity-filter",
                             min=DEFAULT_MAIN_ACTIVITY_RANGE[0],
@@ -424,8 +427,8 @@ app.layout = html.Div(
         html.Div(
             [
                 html.Div(dcc.Graph(id="study-productivity", config={"displaylogo": False}), style=middle_card_style),
-                html.Div(dcc.Graph(id="phone-productivity", config={"displaylogo": False}), style=middle_card_style),
                 html.Div(dcc.Graph(id="sleep-productivity", config={"displaylogo": False}), style=middle_card_style),
+                html.Div(dcc.Graph(id="phone-productivity", config={"displaylogo": False}), style=middle_card_style),
             ],
             style=row_style,
         ),
