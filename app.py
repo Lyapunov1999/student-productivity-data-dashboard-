@@ -536,7 +536,6 @@ app.layout = html.Div(
                 ),
                 html.Div(
                     [
-                        html.Label("Actions"),
                         html.Button("Reset Filters", id="reset-filters", n_clicks=0, style={"height": "38px"}),
                     ],
                     style={"display": "flex", "flexDirection": "column", "gap": "6px", "minWidth": "140px"},
