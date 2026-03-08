@@ -48,13 +48,33 @@ def make_range(values: pd.Series, round_digits: int = 2) -> list[float]:
     return [round(float(values.min()), round_digits), round(float(values.max()), round_digits)]
 
 
+def make_step_aligned_range(values: pd.Series, step: float, round_digits: int) -> list[float]:
+    min_value = float(values.min())
+    max_value = float(values.max())
+    low = np.floor(min_value / step) * step
+    high = np.ceil(max_value / step) * step
+    return [round(low, round_digits), round(high, round_digits)]
+
+
 def slider_marks(min_value: float, max_value: float, digits: int = 0) -> dict[float, str]:
-    mid = round((min_value + max_value) / 2, digits)
     return {
         round(min_value, digits): f"{min_value:.{digits}f}",
-        mid: f"{mid:.{digits}f}",
         round(max_value, digits): f"{max_value:.{digits}f}",
     }
+
+
+def slider_marks_with_selection(
+    min_value: float, max_value: float, selected_range: list[float] | None, digits: int = 0
+) -> dict[float, str]:
+    marks = slider_marks(min_value, max_value, digits)
+    if not selected_range:
+        return marks
+
+    low = round(float(selected_range[0]), digits)
+    high = round(float(selected_range[1]), digits)
+    marks[low] = f"{low:.{digits}f}"
+    marks[high] = f"{high:.{digits}f}"
+    return dict(sorted(marks.items()))
 
 
 def apply_filters(
@@ -322,7 +342,9 @@ DEFAULT_GENDERS = [g for g in GENDER_FILTER_OPTIONS if g in set(DATA_DF["gender"
 if not DEFAULT_GENDERS:
     DEFAULT_GENDERS = GENDER_FILTER_OPTIONS.copy()
 DEFAULT_AGE_RANGE = [int(DATA_DF["age"].min()), int(DATA_DF["age"].max())]
-DEFAULT_MAIN_ACTIVITY_RANGE = make_range(DATA_DF["main_activity_time"], round_digits=2)
+DEFAULT_MAIN_ACTIVITY_RANGE = make_step_aligned_range(
+    DATA_DF["main_activity_time"], step=0.1, round_digits=1
+)
 DEFAULT_PRODUCTIVITY_RANGE = make_range(DATA_DF["productivity_score"], round_digits=0)
 
 
@@ -368,7 +390,7 @@ app.layout = html.Div(
                             value=DEFAULT_AGE_RANGE,
                             marks=slider_marks(DEFAULT_AGE_RANGE[0], DEFAULT_AGE_RANGE[1], digits=0),
                             allowCross=False,
-                            tooltip={"placement": "bottom", "always_visible": False},
+                            updatemode="drag",
                         ),
                     ],
                     style=control_style,
@@ -386,7 +408,7 @@ app.layout = html.Div(
                                 DEFAULT_MAIN_ACTIVITY_RANGE[0], DEFAULT_MAIN_ACTIVITY_RANGE[1], digits=1
                             ),
                             allowCross=False,
-                            tooltip={"placement": "bottom", "always_visible": False},
+                            updatemode="drag",
                         ),
                     ],
                     style=control_style,
@@ -402,7 +424,7 @@ app.layout = html.Div(
                             value=DEFAULT_PRODUCTIVITY_RANGE,
                             marks=slider_marks(DEFAULT_PRODUCTIVITY_RANGE[0], DEFAULT_PRODUCTIVITY_RANGE[1], digits=0),
                             allowCross=False,
-                            tooltip={"placement": "bottom", "always_visible": False},
+                            updatemode="drag",
                         ),
                     ],
                     style=control_style,
@@ -478,6 +500,49 @@ def sync_filters(
         return fallback, no_update, no_update, no_update, fallback
 
     return no_update, no_update, no_update, no_update, no_update
+
+
+@app.callback(
+    Output("age-filter", "marks"),
+    Output("main-activity-filter", "marks"),
+    Output("productivity-filter", "marks"),
+    Input("age-filter", "value"),
+    Input("main-activity-filter", "value"),
+    Input("productivity-filter", "value"),
+)
+def update_slider_marks(
+    age_range: list[float] | None,
+    main_activity_range: list[float] | None,
+    productivity_range: list[float] | None,
+) -> tuple[dict[float, str], dict[float, str], dict[float, str]]:
+    selected_age = age_range if age_range is not None else DEFAULT_AGE_RANGE
+    selected_main_activity = (
+        main_activity_range if main_activity_range is not None else DEFAULT_MAIN_ACTIVITY_RANGE
+    )
+    selected_productivity = (
+        productivity_range if productivity_range is not None else DEFAULT_PRODUCTIVITY_RANGE
+    )
+
+    return (
+        slider_marks_with_selection(
+            DEFAULT_AGE_RANGE[0],
+            DEFAULT_AGE_RANGE[1],
+            selected_age,
+            digits=0,
+        ),
+        slider_marks_with_selection(
+            DEFAULT_MAIN_ACTIVITY_RANGE[0],
+            DEFAULT_MAIN_ACTIVITY_RANGE[1],
+            selected_main_activity,
+            digits=1,
+        ),
+        slider_marks_with_selection(
+            DEFAULT_PRODUCTIVITY_RANGE[0],
+            DEFAULT_PRODUCTIVITY_RANGE[1],
+            selected_productivity,
+            digits=0,
+        ),
+    )
 
 
 @app.callback(
