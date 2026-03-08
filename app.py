@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import plotly.figure_factory as ff
 import plotly.graph_objects as go
-from dash import Dash, Input, Output, dcc, html
+from dash import Dash, Input, Output, State, ctx, dcc, html, no_update
 from scipy.stats import gaussian_kde
 
 
@@ -340,6 +340,7 @@ app.layout = html.Div(
     [
         html.H1("Student Productivity Dashboard", style={"marginBottom": "8px"}),
         html.P("Global filters are applied to all charts.", style={"marginTop": "0", "color": "#4f4f4f"}),
+        dcc.Store(id="gender-last-valid", data=DEFAULT_GENDERS.copy()),
         html.Div(
             [
                 html.Div(
@@ -449,16 +450,34 @@ app.layout = html.Div(
     Output("age-filter", "value"),
     Output("main-activity-filter", "value"),
     Output("productivity-filter", "value"),
+    Output("gender-last-valid", "data"),
     Input("reset-filters", "n_clicks"),
+    Input("gender-filter", "value"),
+    State("gender-last-valid", "data"),
     prevent_initial_call=True,
 )
-def reset_filters(_n_clicks: int) -> tuple[list[str], list[int], list[float], list[float]]:
-    return (
-        DEFAULT_GENDERS.copy(),
-        DEFAULT_AGE_RANGE.copy(),
-        DEFAULT_MAIN_ACTIVITY_RANGE.copy(),
-        DEFAULT_PRODUCTIVITY_RANGE.copy(),
-    )
+def sync_filters(
+    _n_clicks: int, genders: list[str] | None, last_valid_genders: list[str] | None
+) -> tuple[object, object, object, object, object]:
+    triggered = ctx.triggered_id
+    if triggered == "reset-filters":
+        defaults = DEFAULT_GENDERS.copy()
+        return (
+            defaults,
+            DEFAULT_AGE_RANGE.copy(),
+            DEFAULT_MAIN_ACTIVITY_RANGE.copy(),
+            DEFAULT_PRODUCTIVITY_RANGE.copy(),
+            defaults,
+        )
+
+    if triggered == "gender-filter":
+        if genders:
+            return no_update, no_update, no_update, no_update, genders
+
+        fallback = last_valid_genders if last_valid_genders else DEFAULT_GENDERS.copy()
+        return fallback, no_update, no_update, no_update, fallback
+
+    return no_update, no_update, no_update, no_update, no_update
 
 
 @app.callback(
