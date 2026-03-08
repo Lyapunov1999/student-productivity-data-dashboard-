@@ -461,87 +461,94 @@ row_style = {"display": "flex", "flexWrap": "wrap", "gap": "14px", "marginBottom
 top_card_style = {"flex": "1 1 420px", "minWidth": "340px", "border": "1px solid #e5e5e5", "borderRadius": "10px", "padding": "8px"}
 middle_card_style = {"flex": "1 1 320px", "minWidth": "280px", "border": "1px solid #e5e5e5", "borderRadius": "10px", "padding": "8px"}
 bottom_card_style = {"flex": "1 1 420px", "minWidth": "340px", "border": "1px solid #e5e5e5", "borderRadius": "10px", "padding": "8px"}
+filter_card_style = {"border": "1px solid #e5e5e5", "borderRadius": "10px", "padding": "10px", "marginBottom": "12px"}
 
 
 app.layout = html.Div(
     [
         html.H1("Student Productivity Dashboard", style={"marginBottom": "8px"}),
-        html.P("Global filters are applied to all charts.", style={"marginTop": "0", "color": "#4f4f4f"}),
+        # html.P("Global filters are applied to all charts.", style={"marginTop": "0", "color": "#4f4f4f"}),
         dcc.Store(id="gender-last-valid", data=DEFAULT_GENDERS.copy()),
         html.Div(
             [
+                html.H3("Global Filter", style={"margin": "0 0 10px 0"}),
                 html.Div(
                     [
-                        html.Label("Gender"),
-                        dcc.Checklist(
-                            id="gender-filter",
-                            options=[{"label": value, "value": value} for value in GENDER_FILTER_OPTIONS],
-                            value=DEFAULT_GENDERS,
-                            inline=True,
-                            inputStyle={"marginRight": "6px"},
-                            labelStyle={"marginRight": "18px"},
+                        html.Div(
+                            [
+                                html.Label("Gender"),
+                                dcc.Checklist(
+                                    id="gender-filter",
+                                    options=[{"label": value, "value": value} for value in GENDER_FILTER_OPTIONS],
+                                    value=DEFAULT_GENDERS,
+                                    inline=True,
+                                    inputStyle={"marginRight": "6px"},
+                                    labelStyle={"marginRight": "18px"},
+                                ),
+                            ],
+                            style=control_style,
+                        ),
+                        html.Div(
+                            [
+                                html.Label("Age Range"),
+                                dcc.RangeSlider(
+                                    id="age-filter",
+                                    min=DEFAULT_AGE_RANGE[0],
+                                    max=DEFAULT_AGE_RANGE[1],
+                                    step=1,
+                                    value=DEFAULT_AGE_RANGE,
+                                    marks=slider_marks(DEFAULT_AGE_RANGE[0], DEFAULT_AGE_RANGE[1], digits=0),
+                                    allowCross=False,
+                                    updatemode="drag",
+                                ),
+                            ],
+                            style=control_style,
+                        ),
+                        html.Div(
+                            [
+                                html.Label("Main Activity Time Range"),
+                                dcc.RangeSlider(
+                                    id="main-activity-filter",
+                                    min=DEFAULT_MAIN_ACTIVITY_RANGE[0],
+                                    max=DEFAULT_MAIN_ACTIVITY_RANGE[1],
+                                    step=0.1,
+                                    value=DEFAULT_MAIN_ACTIVITY_RANGE,
+                                    marks=slider_marks(
+                                        DEFAULT_MAIN_ACTIVITY_RANGE[0], DEFAULT_MAIN_ACTIVITY_RANGE[1], digits=1
+                                    ),
+                                    allowCross=False,
+                                    updatemode="drag",
+                                ),
+                            ],
+                            style=control_style,
+                        ),
+                        html.Div(
+                            [
+                                html.Label("Productivity Score Range"),
+                                dcc.RangeSlider(
+                                    id="productivity-filter",
+                                    min=DEFAULT_PRODUCTIVITY_RANGE[0],
+                                    max=DEFAULT_PRODUCTIVITY_RANGE[1],
+                                    step=1,
+                                    value=DEFAULT_PRODUCTIVITY_RANGE,
+                                    marks=slider_marks(DEFAULT_PRODUCTIVITY_RANGE[0], DEFAULT_PRODUCTIVITY_RANGE[1], digits=0),
+                                    allowCross=False,
+                                    updatemode="drag",
+                                ),
+                            ],
+                            style=control_style,
+                        ),
+                        html.Div(
+                            [
+                                html.Button("Reset Filters", id="reset-filters", n_clicks=0, style={"height": "38px"}),
+                            ],
+                            style={"display": "flex", "flexDirection": "column", "gap": "6px", "minWidth": "140px"},
                         ),
                     ],
-                    style=control_style,
-                ),
-                html.Div(
-                    [
-                        html.Label("Age Range"),
-                        dcc.RangeSlider(
-                            id="age-filter",
-                            min=DEFAULT_AGE_RANGE[0],
-                            max=DEFAULT_AGE_RANGE[1],
-                            step=1,
-                            value=DEFAULT_AGE_RANGE,
-                            marks=slider_marks(DEFAULT_AGE_RANGE[0], DEFAULT_AGE_RANGE[1], digits=0),
-                            allowCross=False,
-                            updatemode="drag",
-                        ),
-                    ],
-                    style=control_style,
-                ),
-                html.Div(
-                    [
-                        html.Label("Main Activity Time Range"),
-                        dcc.RangeSlider(
-                            id="main-activity-filter",
-                            min=DEFAULT_MAIN_ACTIVITY_RANGE[0],
-                            max=DEFAULT_MAIN_ACTIVITY_RANGE[1],
-                            step=0.1,
-                            value=DEFAULT_MAIN_ACTIVITY_RANGE,
-                            marks=slider_marks(
-                                DEFAULT_MAIN_ACTIVITY_RANGE[0], DEFAULT_MAIN_ACTIVITY_RANGE[1], digits=1
-                            ),
-                            allowCross=False,
-                            updatemode="drag",
-                        ),
-                    ],
-                    style=control_style,
-                ),
-                html.Div(
-                    [
-                        html.Label("Productivity Score Range"),
-                        dcc.RangeSlider(
-                            id="productivity-filter",
-                            min=DEFAULT_PRODUCTIVITY_RANGE[0],
-                            max=DEFAULT_PRODUCTIVITY_RANGE[1],
-                            step=1,
-                            value=DEFAULT_PRODUCTIVITY_RANGE,
-                            marks=slider_marks(DEFAULT_PRODUCTIVITY_RANGE[0], DEFAULT_PRODUCTIVITY_RANGE[1], digits=0),
-                            allowCross=False,
-                            updatemode="drag",
-                        ),
-                    ],
-                    style=control_style,
-                ),
-                html.Div(
-                    [
-                        html.Button("Reset Filters", id="reset-filters", n_clicks=0, style={"height": "38px"}),
-                    ],
-                    style={"display": "flex", "flexDirection": "column", "gap": "6px", "minWidth": "140px"},
+                    style={"display": "flex", "flexWrap": "wrap", "gap": "14px"},
                 ),
             ],
-            style={"display": "flex", "flexWrap": "wrap", "gap": "14px", "marginBottom": "12px"},
+            style=filter_card_style,
         ),
         html.Div(id="record-count", style={"fontWeight": "600", "marginBottom": "14px"}),
         html.Div(
