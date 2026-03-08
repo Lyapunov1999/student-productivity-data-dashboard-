@@ -381,7 +381,7 @@ def build_focus_distribution(df: pd.DataFrame) -> go.Figure:
         go.Histogram(
             x=values,
             histnorm="probability density",
-            nbinsx=30,
+            xbins=dict(size=1),
             name="Histogram",
             opacity=0.65,
             marker=dict(color="#4c78a8"),
