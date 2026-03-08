@@ -343,7 +343,7 @@ def build_density_panel(df: pd.DataFrame, x_col: str, x_label: str) -> go.Figure
             hovertemplate=(
                 f"{x_label}: %{{x:.2f}}<br>"
                 "Productivity: %{y:.2f}<br>"
-                "Density: %{customdata:.0f}<extra></extra>"
+                "Samples in bin: %{customdata:.0f}<extra></extra>"
             ),
             showscale=True,
             hoverongaps=False,
@@ -422,9 +422,10 @@ def build_stress_distribution(df: pd.DataFrame) -> go.Figure:
     fig.add_trace(
         go.Histogram(
             x=df["stress_level"],
+            histnorm="probability density",
             xbins=dict(start=0.5, end=10.5, size=1),
             marker=dict(color="#c76b6b"),
-            name="Count",
+            name="Density",
         )
     )
     fig.update_layout(
@@ -432,7 +433,7 @@ def build_stress_distribution(df: pd.DataFrame) -> go.Figure:
         template="plotly_white",
         margin=dict(l=45, r=20, t=55, b=45),
         xaxis_title="Stress Level",
-        yaxis_title="Count",
+        yaxis_title="Density",
         bargap=0.08,
     )
     fig.update_xaxes(tickmode="linear", tick0=1, dtick=1, range=[0.5, 10.5])
