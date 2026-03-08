@@ -338,7 +338,7 @@ def build_density_panel(df: pd.DataFrame, x_col: str, x_label: str) -> go.Figure
             y=y_centers,
             z=density_counts,
             customdata=counts.T,
-            colorscale="YlOrRd",
+            colorscale="Blues",
             colorbar=dict(title="Density"),
             hovertemplate=(
                 f"{x_label}: %{{x:.2f}}<br>"
@@ -384,7 +384,7 @@ def build_focus_distribution(df: pd.DataFrame) -> go.Figure:
             xbins=dict(size=1),
             name="Histogram",
             opacity=0.65,
-            marker=dict(color="#4c78a8"),
+            marker=dict(color="#6aa57a"),
         )
     )
 
@@ -396,7 +396,7 @@ def build_focus_distribution(df: pd.DataFrame) -> go.Figure:
                 x=x_grid,
                 y=kde(x_grid),
                 mode="lines",
-                line=dict(color="#f58518", width=2),
+                line=dict(color="#4c78a8", width=2),
                 name="KDE",
             )
         )
@@ -423,7 +423,7 @@ def build_stress_distribution(df: pd.DataFrame) -> go.Figure:
         go.Histogram(
             x=df["stress_level"],
             xbins=dict(start=0.5, end=10.5, size=1),
-            marker=dict(color="#e45756"),
+            marker=dict(color="#c76b6b"),
             name="Count",
         )
     )
