@@ -20,6 +20,9 @@ BASE_COLUMNS = [
     "focus_score",
     "stress_level",
 ]
+SCATTER_DENSITY_BINS_X = 45
+SCATTER_DENSITY_BINS_Y = 45
+LOW_DENSITY_QUANTILE = 0.05
 
 
 def load_data(path: Path) -> pd.DataFrame:
@@ -307,23 +310,50 @@ def build_density_panel(df: pd.DataFrame, x_col: str, x_label: str) -> go.Figure
     if df.empty:
         return empty_figure(title)
 
+    valid = df[[x_col, "productivity_score"]].dropna()
+    if valid.empty:
+        return empty_figure(title)
+
+    x_values = valid[x_col].to_numpy(dtype=float)
+    y_values = valid["productivity_score"].to_numpy(dtype=float)
+
+    counts, x_edges, y_edges = np.histogram2d(
+        x_values, y_values, bins=[SCATTER_DENSITY_BINS_X, SCATTER_DENSITY_BINS_Y]
+    )
+    x_centers = (x_edges[:-1] + x_edges[1:]) / 2
+    y_centers = (y_edges[:-1] + y_edges[1:]) / 2
+
+    density_counts = counts.T.astype(float)
+    density_counts[density_counts == 0] = np.nan
+
+    non_zero_density = density_counts[np.isfinite(density_counts)]
+    if non_zero_density.size > 0 and np.unique(non_zero_density).size > 1:
+        low_density_cutoff = float(np.quantile(non_zero_density, LOW_DENSITY_QUANTILE))
+        density_counts[density_counts <= low_density_cutoff] = np.nan
+
     fig = go.Figure()
     fig.add_trace(
-        go.Histogram2dContour(
-            x=df[x_col],
-            y=df["productivity_score"],
+        go.Heatmap(
+            x=x_centers,
+            y=y_centers,
+            z=density_counts,
+            customdata=counts.T,
             colorscale="YlOrRd",
-            ncontours=18,
-            contours=dict(coloring="fill", showlabels=False),
             colorbar=dict(title="Density"),
-            hovertemplate=f"{x_label}: %{{x:.2f}}<br>Productivity: %{{y:.2f}}<extra></extra>",
+            hovertemplate=(
+                f"{x_label}: %{{x:.2f}}<br>"
+                "Productivity: %{y:.2f}<br>"
+                "Density: %{customdata:.0f}<extra></extra>"
+            ),
             showscale=True,
+            hoverongaps=False,
+            zsmooth=False,
         )
     )
     fig.add_trace(
         go.Scattergl(
-            x=df[x_col],
-            y=df["productivity_score"],
+            x=x_values,
+            y=y_values,
             mode="markers",
             marker=dict(size=3, color="rgba(20,20,20,0.20)"),
             hoverinfo="skip",
