@@ -281,7 +281,7 @@ def build_ternary_productivity(df: pd.DataFrame) -> go.Figure:
 
 
 def build_ternary_density(df: pd.DataFrame) -> go.Figure:
-    title = "Main Activity Time Allocation Distribution"
+    title = "Distribution of Main Activity Time Allocation"
     if df.empty:
         return empty_figure(title)
 
@@ -371,7 +371,7 @@ def build_density_panel(df: pd.DataFrame, x_col: str, x_label: str) -> go.Figure
 
 
 def build_focus_distribution(df: pd.DataFrame) -> go.Figure:
-    title = "Focus Score Distribution"
+    title = "Distribution of Focus Score"
     if df.empty:
         return empty_figure(title)
 
@@ -414,7 +414,7 @@ def build_focus_distribution(df: pd.DataFrame) -> go.Figure:
 
 
 def build_stress_distribution(df: pd.DataFrame) -> go.Figure:
-    title = "Stress Level Distribution"
+    title = "Distribution of Stress Level"
     if df.empty:
         return empty_figure(title)
 
