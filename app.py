@@ -253,7 +253,7 @@ def log1p_for_heatmap(values: np.ndarray) -> np.ndarray:
 
 
 def build_ternary_productivity(df: pd.DataFrame) -> go.Figure:
-    title = "Ternary Composition (Binned Mean Productivity)"
+    title = "Main Activity Time Allocation vs Productivity"
     if df.empty:
         return empty_figure(title)
 
@@ -281,7 +281,7 @@ def build_ternary_productivity(df: pd.DataFrame) -> go.Figure:
 
 
 def build_ternary_density(df: pd.DataFrame) -> go.Figure:
-    title = "Ternary Density (Binned Heatmap)"
+    title = "Main Activity Time Allocation Distribution"
     if df.empty:
         return empty_figure(title)
 
@@ -507,7 +507,7 @@ app.layout = html.Div(
                         ),
                         html.Div(
                             [
-                                html.Label("(Study+Sleep+Phone) Time Range"),
+                                html.Label("Main Activity Time Range"),
                                 dcc.RangeSlider(
                                     id="main-activity-filter",
                                     min=DEFAULT_MAIN_ACTIVITY_RANGE[0],
