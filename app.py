@@ -16,6 +16,7 @@ BASE_COLUMNS = [
     "study_hours_per_day",
     "sleep_hours",
     "phone_usage_hours",
+    "main_activity_time",
     "productivity_score",
     "focus_score",
     "stress_level",
@@ -32,9 +33,6 @@ def load_data(path: Path) -> pd.DataFrame:
         raise ValueError(f"Missing required columns: {missing}")
 
     df = df[BASE_COLUMNS].copy()
-    df["main_activity_time"] = (
-        df["study_hours_per_day"] + df["sleep_hours"] + df["phone_usage_hours"]
-    )
 
     totals = df["main_activity_time"]
     df = df.loc[totals > 0].copy()

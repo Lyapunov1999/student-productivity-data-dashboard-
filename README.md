@@ -67,11 +67,12 @@ The app expects a CSV file named `student_productivity_distraction_dataset_20000
 - `study_hours_per_day`
 - `sleep_hours`
 - `phone_usage_hours`
+- `main_activity_time`
 - `productivity_score`
 - `focus_score`
 - `stress_level`
 
-Rows with non-positive total main activity time (`study + sleep + phone`) are excluded.
+Rows with non-positive `main_activity_time` are excluded.
 
 ## Tech Stack
 
