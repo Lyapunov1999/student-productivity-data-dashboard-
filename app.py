@@ -443,10 +443,14 @@ def build_stress_distribution(df: pd.DataFrame) -> go.Figure:
 DATA_DF = load_data(DATA_PATH)
 TOTAL_RECORDS = len(DATA_DF)
 
-GENDER_FILTER_OPTIONS = ["Male", "Female"]
-DEFAULT_GENDERS = [g for g in GENDER_FILTER_OPTIONS if g in set(DATA_DF["gender"].dropna().unique())]
-if not DEFAULT_GENDERS:
-    DEFAULT_GENDERS = GENDER_FILTER_OPTIONS.copy()
+raw_genders = list(pd.unique(DATA_DF["gender"].dropna()))
+preferred_gender_order = ["Male", "Female", "Other"]
+GENDER_FILTER_OPTIONS = [g for g in preferred_gender_order if g in raw_genders] + [
+    g for g in raw_genders if g not in preferred_gender_order
+]
+if not GENDER_FILTER_OPTIONS:
+    GENDER_FILTER_OPTIONS = preferred_gender_order.copy()
+DEFAULT_GENDERS = GENDER_FILTER_OPTIONS.copy()
 DEFAULT_AGE_RANGE = [int(DATA_DF["age"].min()), int(DATA_DF["age"].max())]
 DEFAULT_MAIN_ACTIVITY_RANGE = make_step_aligned_range(
     DATA_DF["main_activity_time"], step=0.1, round_digits=1
