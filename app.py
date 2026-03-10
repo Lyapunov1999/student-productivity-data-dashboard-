@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 import numpy as np
@@ -460,6 +461,7 @@ DEFAULT_PRODUCTIVITY_RANGE = make_range(DATA_DF["productivity_score"], round_dig
 
 app = Dash(__name__)
 app.title = "Student Productivity Dashboard"
+server = app.server
 
 control_style = {"display": "flex", "flexDirection": "column", "gap": "6px", "minWidth": "250px", "flex": "1 1 250px"}
 row_style = {"display": "flex", "flexWrap": "wrap", "gap": "14px", "marginBottom": "16px"}
@@ -720,4 +722,4 @@ def update_dashboard(
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=int(os.getenv("PORT", "8050")), debug=False)
