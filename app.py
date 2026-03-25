@@ -306,7 +306,15 @@ def build_ternary_density(df: pd.DataFrame) -> go.Figure:
     return format_ternary_heatmap_layout(fig, title)
 
 
-def build_density_panel(df: pd.DataFrame, x_col: str, x_label: str) -> go.Figure:
+def build_density_panel(
+    df: pd.DataFrame,
+    x_col: str,
+    x_label: str,
+    *,
+    colorscale: str,
+    scatter_color: str,
+    colorbar_title: str = "Density",
+) -> go.Figure:
     title = f"{x_label} vs Productivity"
     if df.empty:
         return empty_figure(title)
@@ -339,8 +347,8 @@ def build_density_panel(df: pd.DataFrame, x_col: str, x_label: str) -> go.Figure
             y=y_centers,
             z=density_counts,
             customdata=counts.T,
-            colorscale="Blues",
-            colorbar=dict(title="Density", showticklabels=False),
+            colorscale=colorscale,
+            colorbar=dict(title=colorbar_title, showticklabels=False, thickness=12, len=0.82),
             hovertemplate=(
                 f"{x_label}: %{{x:.2f}}<br>"
                 "Productivity: %{y:.2f}<br>"
@@ -356,7 +364,7 @@ def build_density_panel(df: pd.DataFrame, x_col: str, x_label: str) -> go.Figure
             x=x_values,
             y=y_values,
             mode="markers",
-            marker=dict(size=3, color="rgba(20,20,20,0.20)"),
+            marker=dict(size=3, color=scatter_color),
             hoverinfo="skip",
             showlegend=False,
         )
@@ -457,6 +465,26 @@ DEFAULT_MAIN_ACTIVITY_RANGE = make_step_aligned_range(
     DATA_DF["main_activity_time"], step=0.1, round_digits=1
 )
 DEFAULT_PRODUCTIVITY_RANGE = make_range(DATA_DF["productivity_score"], round_digits=0)
+MIDDLE_CHART_CONFIG = {
+    "study": {
+        "x_col": "study_hours_per_day",
+        "x_label": "Study Time",
+        "colorscale": "Greens",
+        "scatter_color": "rgba(38, 92, 58, 0.18)",
+    },
+    "sleep": {
+        "x_col": "sleep_hours",
+        "x_label": "Sleep Time",
+        "colorscale": "Blues",
+        "scatter_color": "rgba(54, 92, 140, 0.18)",
+    },
+    "phone": {
+        "x_col": "phone_usage_hours",
+        "x_label": "Phone Time",
+        "colorscale": "Oranges",
+        "scatter_color": "rgba(138, 73, 38, 0.18)",
+    },
+}
 
 
 app = Dash(__name__)
@@ -703,9 +731,9 @@ def update_dashboard(
 
     fig_ternary_productivity = build_ternary_productivity(filtered)
     fig_ternary_density = build_ternary_density(filtered)
-    fig_study = build_density_panel(filtered, "study_hours_per_day", "Study Time")
-    fig_phone = build_density_panel(filtered, "phone_usage_hours", "Phone Time")
-    fig_sleep = build_density_panel(filtered, "sleep_hours", "Sleep Time")
+    fig_study = build_density_panel(filtered, **MIDDLE_CHART_CONFIG["study"])
+    fig_phone = build_density_panel(filtered, **MIDDLE_CHART_CONFIG["phone"])
+    fig_sleep = build_density_panel(filtered, **MIDDLE_CHART_CONFIG["sleep"])
     fig_focus = build_focus_distribution(filtered)
     fig_stress = build_stress_distribution(filtered)
 
