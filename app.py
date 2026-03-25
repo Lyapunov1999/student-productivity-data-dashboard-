@@ -7,7 +7,6 @@ import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 from dash import Dash, Input, Output, State, ctx, dcc, html, no_update
-from scipy.stats import gaussian_kde
 
 
 DATA_PATH = Path(__file__).resolve().parent / "student_productivity_distraction_dataset_20000.csv"
@@ -391,33 +390,18 @@ def build_focus_distribution(df: pd.DataFrame) -> go.Figure:
             x=values,
             histnorm="probability density",
             xbins=dict(size=1),
-            name="Histogram",
-            opacity=0.65,
+            name="Density",
+            opacity=0.72,
             marker=dict(color="#6aa57a"),
         )
     )
 
-    if np.unique(values).size > 1:
-        x_grid = np.linspace(values.min(), values.max(), 220)
-        kde = gaussian_kde(values)
-        fig.add_trace(
-            go.Scatter(
-                x=x_grid,
-                y=kde(x_grid),
-                mode="lines",
-                line=dict(color="#4c78a8", width=2),
-                name="KDE",
-            )
-        )
-
     fig.update_layout(
         title=title,
         template="plotly_white",
-        barmode="overlay",
         margin=dict(l=45, r=20, t=55, b=45),
         xaxis_title="Focus Score",
         yaxis_title="Density",
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
     )
     return fig
 
